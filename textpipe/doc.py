@@ -13,12 +13,11 @@ import numpy
 import spacy
 import spacy.matcher
 import textacy
-import textacy.ke
-import textacy.text_utils
+import textacy.extract.keyterms
+import textacy.extract
 from bs4 import BeautifulSoup
 from datasketch import MinHash
 from gensim.models.keyedvectors import KeyedVectors
-from gensim.summarization.summarizer import summarize
 
 from textpipe.data.emoji import EMOJI_TO_UNICODE_NAME, EMOJI_TO_SENTIMENT
 from textpipe.wrappers import RedisKeyedVectors
@@ -406,7 +405,7 @@ class Doc:
     def extract_keyterms(self, ranker='textrank', n_terms=10, **kwargs):
         """
         Extract and rank key terms in the document by proxying to
-        `textacy.keyterms`. Returns a list of (term, score) tuples. Depending
+        `textacy.extract.keyterms`. Returns a list of (term, score) tuples. Depending
         on the ranking algorithm used, terms can consist of multiple words.
 
         Available rankers are TextRank (textrank), SingleRank (singlerank) and
@@ -435,7 +434,7 @@ class Doc:
         if ranker not in rankers:
             raise ValueError(f'ranker "{ranker}" not available; use one '
                              f'of {rankers}')
-        ranking_fn = getattr(textacy.ke, ranker)
+        ranking_fn = getattr(textacy.extract.keyterms, ranker)
         return ranking_fn(self._spacy_doc, topn=n_terms, **kwargs)
 
     @property
@@ -702,57 +701,57 @@ class Doc:
                 vectors.append(model[word] * (count / idf))
         return list(sum(vectors))
 
-    @functools.lru_cache()
-    def generate_textrank_summary(self, ratio=0.2, word_count=None):
-        """
-        returns a textrank summary of the document (extractive summary) generated with gensim
-        returns an empty summary if the text could not be compressed
-        if both ratio and word_count are provided, ratio is ignored
-        """
-        try:
-            return summarize(self._spacy_doc.text, ratio=ratio, word_count=word_count, split=True)
-        except ValueError:
-            return []
+    #@functools.lru_cache()
+    #def generate_textrank_summary(self, ratio=0.2, word_count=None):
+    #    """
+    #    returns a textrank summary of the document (extractive summary) generated with gensim
+    #    returns an empty summary if the text could not be compressed
+    #    if both ratio and word_count are provided, ratio is ignored
+    #    """
+    #    try:
+    #        return summarize(self._spacy_doc.text, ratio=ratio, word_count=word_count, split=True)
+    #    except ValueError:
+    #        return []
 
-    @property
-    def summary(self):
-        """
-        returns a textrank summary of the document (extractive summary)
+    #@property
+    #def summary(self):
+    #    """
+    #    returns a textrank summary of the document (extractive summary)
 
-        >>> from pprint import pprint
-        >>> from textpipe.doc import Doc
-        >>> text = '''Rice Pudding - Poem by Alan Alexander Milne
-        ... What is the matter with Mary Jane?
-        ... She's crying with all her might and main,
-        ... And she won't eat her dinner - rice pudding again -
-        ... What is the matter with Mary Jane?
-        ... What is the matter with Mary Jane?
-        ... I've promised her dolls and a daisy-chain,
-        ... And a book about animals - all in vain -
-        ... What is the matter with Mary Jane?
-        ... What is the matter with Mary Jane?
-        ... She's perfectly well, and she hasn't a pain;
-        ... But, look at her, now she's beginning again! -
-        ... What is the matter with Mary Jane?
-        ... What is the matter with Mary Jane?
-        ... I've promised her sweets and a ride in the train,
-        ... And I've begged her to stop for a bit and explain -
-        ... What is the matter with Mary Jane?
-        ... What is the matter with Mary Jane?
-        ... She's perfectly well and she hasn't a pain,
-        ... And it's lovely rice pudding for dinner again!
-        ... What is the matter with Mary Jane?'''
-        >>> document = Doc(text)
-        >>> pprint(document.summary)
-        ["She's crying with all her might and main, And she won't eat her dinner - "
-         'rice pudding again - What is the matter with Mary Jane?',
-         "She's perfectly well and she hasn't a pain, And it's lovely rice pudding for "
-         'dinner again!']
-        >>> document = Doc('just 1 sentence.')
-        >>> document.summary
-        []
-        """
-        return self.generate_textrank_summary()
+    #    >>> from pprint import pprint
+    #    >>> from textpipe.doc import Doc
+    #    >>> text = '''Rice Pudding - Poem by Alan Alexander Milne
+    #    ... What is the matter with Mary Jane?
+    #    ... She's crying with all her might and main,
+    #    ... And she won't eat her dinner - rice pudding again -
+    #    ... What is the matter with Mary Jane?
+    #    ... What is the matter with Mary Jane?
+    #    ... I've promised her dolls and a daisy-chain,
+    #    ... And a book about animals - all in vain -
+    #    ... What is the matter with Mary Jane?
+    #    ... What is the matter with Mary Jane?
+    #    ... She's perfectly well, and she hasn't a pain;
+    #    ... But, look at her, now she's beginning again! -
+    #    ... What is the matter with Mary Jane?
+    #    ... What is the matter with Mary Jane?
+    #    ... I've promised her sweets and a ride in the train,
+    #    ... And I've begged her to stop for a bit and explain -
+    #    ... What is the matter with Mary Jane?
+    #    ... What is the matter with Mary Jane?
+    #    ... She's perfectly well and she hasn't a pain,
+    #    ... And it's lovely rice pudding for dinner again!
+    #    ... What is the matter with Mary Jane?'''
+    #    >>> document = Doc(text)
+    #    >>> pprint(document.summary)
+    #    ["She's crying with all her might and main, And she won't eat her dinner - "
+    #     'rice pudding again - What is the matter with Mary Jane?',
+    #     "She's perfectly well and she hasn't a pain, And it's lovely rice pudding for "
+    #     'dinner again!']
+    #    >>> document = Doc('just 1 sentence.')
+    #    >>> document.summary
+    #    []
+    #    """
+    #    return self.generate_textrank_summary()
 
     def extract_lead(self, nsents=3):
         """

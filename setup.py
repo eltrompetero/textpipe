@@ -1,6 +1,10 @@
 import setuptools
 import setuptools.command.install
 from pathlib import Path
+import os
+
+os.environ['CC'] = os.environ['CONDA_PREFIX'] + '/bin/gcc'
+os.environ['CXX'] = os.environ['CONDA_PREFIX'] + '/bin/g++'
 
 class PostInstallCommand(setuptools.command.install.install):
     """Post-installation command."""
